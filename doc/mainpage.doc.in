@@ -88,7 +88,7 @@ href="https://visp.inria.fr/publications" target="_parent">https://visp.inria.fr
 
 \subsection tuto_install_src Installation from source
 
-- \ref tutorial-install-ubuntu <br>In this tutorial you will learn how to install ViSP from source on Linux Ubuntu.
+- \ref tutorial-install-ubuntu <br>In this tutorial you will learn how to install ViSP from source on Linux Ubuntu or Debian.
 - \ref tutorial-install-fedora <br>In this other tutorial you will learn how to install ViSP from source on Linux Fedora.
 - \ref tutorial-install-centos <br>In this other tutorial you will learn how to install ViSP from source on Linux CentOS.
 - \ref tutorial-install-opensuse <br>In this other tutorial you will learn how to install ViSP from source on Linux openSUSE.
@@ -117,6 +117,7 @@ href="https://visp.inria.fr/publications" target="_parent">https://visp.inria.fr
 \subsection tuto_image Image manipulation
 
 - \ref tutorial-image-display <br>In this tutorial you will learn how to display an image in a window and how to down scale the window size to be able to display images that are larger than the screen resolution.
+- \ref tutorial-basic-drawings <br>In this tutorial you will learn how to display basic primitives such as points, lines, circles, rectangles in an image display window.
 - \ref tutorial-grabber <br>This tutorial shows how to acquire images from a camera.
 - \ref tutorial-image-filtering <br>This tutorial shows how to filter an image with ViSP.
 - \ref tutorial-simu-image <br>This tutorial shows how to project the image of a planar scene to a given camera position.
@@ -148,6 +149,8 @@ href="https://visp.inria.fr/publications" target="_parent">https://visp.inria.fr
 - \ref tutorial-tracking-mb-generic-apriltag-live <br>This tutorial is a simple use case. Using a webcam or an Intel RGB-D camera it shows how to test the generic model tracker on a cube that has an AprilTag glued on one face. The tag is here used to automate the tracker initialization.
 - \ref tutorial-tracking-mb-deprecated <br>This deprecated tutorial focuses on model-based trackers using either edges, keypoints or and hybrid scheme that uses edges and keypoints.
 - \ref tutorial-tracking-mb-stereo-deprecated <br>This deprecated tutorial focuses on model-based trackers with stereo cameras.
+- \ref tutorial-tracking-mb-CAO-editor <br>This tutorial presents the project done during the GSoC 2017: two Blender plugins to import/export .cao model file and a Qt-based .cao editor.
+- \ref tutorial-tracking-mb-generic-rgbd-Blender <br>This tutorial shows how to use Blender to generate simulated data to test the model-based tracker.
 - \ref tutorial-tracking-tt <br>This tutorial focuses on template trackers based on image registration approaches.
 
 \subsection tuto_detection Detection

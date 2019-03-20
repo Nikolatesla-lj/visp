@@ -1,7 +1,7 @@
 /****************************************************************************
  *
- * This file is part of the ViSP software.
- * Copyright (C) 2005 - 2017 by Inria. All rights reserved.
+ * ViSP, open source Visual Servoing Platform software.
+ * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -342,6 +342,8 @@ protected:
   vpColVector m_weightedError_edge;
   //! Robust
   vpRobust m_robust_edge;
+  //! Display features
+  std::vector<std::vector<double> > m_featuresToBeDisplayedEdge;
 
 public:
   vpMbEdgeTracker();
@@ -350,14 +352,19 @@ public:
   /** @name Inherited functionalities from vpMbEdgeTracker */
   //@{
 
-  void display(const vpImage<unsigned char> &I, const vpHomogeneousMatrix &cMo, const vpCameraParameters &cam,
-               const vpColor &col, const unsigned int thickness = 1, const bool displayFullModel = false);
-  void display(const vpImage<vpRGBa> &I, const vpHomogeneousMatrix &cMo, const vpCameraParameters &cam,
-               const vpColor &col, const unsigned int thickness = 1, const bool displayFullModel = false);
+  virtual void display(const vpImage<unsigned char> &I, const vpHomogeneousMatrix &cMo, const vpCameraParameters &cam,
+                       const vpColor &col, const unsigned int thickness = 1, const bool displayFullModel = false);
+  virtual void display(const vpImage<vpRGBa> &I, const vpHomogeneousMatrix &cMo, const vpCameraParameters &cam,
+                       const vpColor &col, const unsigned int thickness = 1, const bool displayFullModel = false);
 
   void getLline(std::list<vpMbtDistanceLine *> &linesList, const unsigned int level = 0) const;
   void getLcircle(std::list<vpMbtDistanceCircle *> &circlesList, const unsigned int level = 0) const;
   void getLcylinder(std::list<vpMbtDistanceCylinder *> &cylindersList, const unsigned int level = 0) const;
+
+  virtual std::vector<std::vector<double> > getModelForDisplay(unsigned int width, unsigned int height,
+                                                               const vpHomogeneousMatrix &cMo,
+                                                               const vpCameraParameters &cam,
+                                                               const bool displayFullModel=false);
 
   /*!
     Get the moving edge parameters.
@@ -488,12 +495,14 @@ public:
   void setMovingEdge(const vpMe &me);
 
   virtual void setPose(const vpImage<unsigned char> &I, const vpHomogeneousMatrix &cdMo);
+  virtual void setPose(const vpImage<vpRGBa> &I_color, const vpHomogeneousMatrix &cdMo);
 
   void setScales(const std::vector<bool> &_scales);
 
   void setUseEdgeTracking(const std::string &name, const bool &useEdgeTracking);
 
-  void track(const vpImage<unsigned char> &I);
+  virtual void track(const vpImage<unsigned char> &I);
+  virtual void track(const vpImage<vpRGBa> &I);
   //@}
 
 protected:
@@ -519,9 +528,11 @@ protected:
   virtual void computeVVSWeights();
   using vpMbTracker::computeVVSWeights;
 
-  void displayFeaturesOnImage(const vpImage<unsigned char> &I, const unsigned int lvl);
+  void displayFeaturesOnImage(const vpImage<unsigned char> &I);
+  void displayFeaturesOnImage(const vpImage<vpRGBa> &I);
   void downScale(const unsigned int _scale);
-  void init(const vpImage<unsigned char> &I);
+  virtual std::vector<std::vector<double> > getFeaturesForDisplayEdge();
+  virtual void init(const vpImage<unsigned char> &I);
   virtual void initCircle(const vpPoint &p1, const vpPoint &p2, const vpPoint &p3, const double radius,
                           const int idFace = 0, const std::string &name = "");
   virtual void initCylinder(const vpPoint &p1, const vpPoint &p2, const double radius, const int idFace = 0,
@@ -538,7 +549,8 @@ protected:
   void removeCylinder(const std::string &name);
   void removeLine(const std::string &name);
   void resetMovingEdge();
-  void testTracking();
+  virtual void testTracking();
+  virtual void track(const vpImage<unsigned char> * const I, const vpImage<vpRGBa> * const I_color);
   void trackMovingEdge(const vpImage<unsigned char> &I);
   void updateMovingEdge(const vpImage<unsigned char> &I);
   void updateMovingEdgeWeights();

@@ -1,7 +1,7 @@
 #############################################################################
 #
-# This file is part of the ViSP software.
-# Copyright (C) 2005 - 2017 by Inria. All rights reserved.
+# ViSP, open source Visual Servoing Platform software.
+# Copyright (C) 2005 - 2019 by Inria. All rights reserved.
 #
 # This software is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -62,7 +62,7 @@
 #     include(${VISP_USE_FILE})
 #   endif()
 #
-# Or you can search for specific OpenCV modules:
+# Or you can search for specific ViSP modules:
 #
 #   find_package(VISP REQUIRED core io)
 #
@@ -191,6 +191,7 @@ set(VISP_HAVE_AFMA4          "@VISP_HAVE_AFMA4@")
 set(VISP_HAVE_AFMA6          "@VISP_HAVE_AFMA6@")
 set(VISP_HAVE_APRILTAG       "@VISP_HAVE_APRILTAG@")
 set(VISP_HAVE_ATIDAQ         "@VISP_HAVE_ATIDAQ@")
+set(VISP_HAVE_ATLAS          "@VISP_HAVE_ATLAS@")
 set(VISP_HAVE_BICLOPS        "@VISP_HAVE_BICLOPS@")
 set(VISP_HAVE_CLIPPER        "@VISP_HAVE_CLIPPER@")
 set(VISP_HAVE_CMU1394        "@VISP_HAVE_CMU1394@")
@@ -214,12 +215,15 @@ set(VISP_HAVE_JPEG           "@VISP_HAVE_JPEG@")
 set(VISP_HAVE_LAPACK         "@VISP_HAVE_LAPACK@")
 set(VISP_HAVE_LAPACK_C       "@VISP_HAVE_LAPACK_C@")
 set(VISP_HAVE_LAPACK_BUILT_IN "@VISP_HAVE_LAPACK_BUILT_IN@")
+set(VISP_HAVE_LAPACK_NETLIB  "@VISP_HAVE_LAPACK_NETLIB@")
 set(VISP_HAVE_LIBFREENECT    "@VISP_HAVE_LIBFREENECT@")
 set(VISP_HAVE_LIBFREENECT_AND_DEPENDENCIES "@VISP_HAVE_LIBFREENECT_AND_DEPENDENCIES@")
 set(VISP_HAVE_LIBFREENECT_OLD "@VISP_HAVE_LIBFREENECT_OLD@")
 set(VISP_HAVE_LIBUSB_1       "@VISP_HAVE_LIBUSB_1@")
+set(VISP_HAVE_MKL            "@VISP_HAVE_MKL@")
 set(VISP_HAVE_OGRE           "@VISP_HAVE_OGRE@")
 set(VISP_HAVE_OIS            "@VISP_HAVE_OIS@")
+set(VISP_HAVE_OPENBLAS       "@VISP_HAVE_OPENBLAS@")
 set(VISP_HAVE_OPENCV         "@VISP_HAVE_OPENCV@")
 set(VISP_HAVE_OPENCV_NONFREE "@VISP_HAVE_OPENCV_NONFREE@")
 set(VISP_HAVE_OPENCV_VERSION "@VISP_HAVE_OPENCV_VERSION@")
@@ -232,6 +236,7 @@ set(VISP_HAVE_PNG            "@VISP_HAVE_PNG@")
 set(VISP_HAVE_PTHREAD        "@VISP_HAVE_PTHREAD@")
 set(VISP_HAVE_PTU46          "@VISP_HAVE_PTU46@")
 set(VISP_HAVE_PYLON          "@VISP_HAVE_PYLON@")
+set(VISP_HAVE_QBDEVICE       "@VISP_HAVE_QBDEVICE@")
 set(VISP_HAVE_QT             "@VISP_HAVE_QT@")
 set(VISP_HAVE_REALSENSE      "@VISP_HAVE_REALSENSE@")
 set(VISP_HAVE_REALSENSE2     "@VISP_HAVE_REALSENSE2@")
@@ -279,6 +284,7 @@ if(VISP_HAVE_CXX11)
     endif()
   endif()
 endif()
+
 #----------------------------------------------------------------------
 # Propagate openmp compiler option if enabled during ViSP build
 #----------------------------------------------------------------------
@@ -292,6 +298,16 @@ endif()
 if(VISP_HAVE_FRANKA)
   set(CMAKE_CXX_STANDARD 11)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+
+#----------------------------------------------------------------------
+# Propagate -fPIC option requested with Qt5 that requires position independent
+# code if Qt was built with -reduce-relocations.
+#----------------------------------------------------------------------
+if(UNIX)
+  if(CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC") # Is needed for ANDROID too.
+  endif()
 endif()
 
 #----------------------------------------------------------------------
@@ -330,12 +346,10 @@ endmacro()
 if (CMAKE_VERSION VERSION_GREATER 2.8.12)
   macro(visp_copy_data file_cpp file_data)
     get_filename_component(target ${file_cpp} NAME_WE)
-    #get_target_property(target_location ${target} LOCATION)
     get_filename_component(target_location "${target_location}" PATH)
     add_custom_command(
       TARGET ${target}
       POST_BUILD
-      #COMMAND ${CMAKE_COMMAND} -E copy "${file_data}" "${target_location}"
       COMMAND ${CMAKE_COMMAND} -E copy "${file_data}" "$<TARGET_FILE_DIR:${target}>"
     )
   endmacro()
@@ -348,6 +362,32 @@ else()
       TARGET ${target}
       POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy "${file_data}" "${target_location}"
+    )
+  endmacro()
+endif()
+
+# Copy the data files to the same location than the target associated to the cpp files
+# Since CMake 3.0.0 policy CMP0026 was introduced to disallow location property on target.
+# If CMake 3.0.0 is used, we use $<TARGET_FILE_DIR:tgt> to get the target location
+if (CMAKE_VERSION VERSION_GREATER 2.8.12)
+  macro(visp_copy_dir file_cpp root_dir rel_dir)
+    get_filename_component(target ${file_cpp} NAME_WE)
+    get_filename_component(target_location "${target_location}" PATH)
+    add_custom_command(
+      TARGET ${target}
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_directory "${root_dir}/${rel_dir}" "$<TARGET_FILE_DIR:${target}>/${rel_dir}"
+    )
+  endmacro()
+else()
+  macro(visp_copy_data file_cpp root_dir rel_dir)
+    get_filename_component(target ${file_cpp} NAME_WE)
+    get_target_property(target_location ${target} LOCATION)
+    get_filename_component(target_location "${target_location}" PATH)
+    add_custom_command(
+      TARGET ${target}
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_directory "${root_dir}/${rel_dir}" "${target_location}/${rel_dir}"
     )
   endmacro()
 endif()

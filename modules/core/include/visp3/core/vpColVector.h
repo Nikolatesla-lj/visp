@@ -1,7 +1,7 @@
 /****************************************************************************
  *
- * This file is part of the ViSP software.
- * Copyright (C) 2005 - 2017 by Inria. All rights reserved.
+ * ViSP, open source Visual Servoing Platform software.
+ * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,8 +36,8 @@
  *
  *****************************************************************************/
 
-#ifndef vpColVector_H
-#define vpColVector_H
+#ifndef _vpColVector_h_
+#define _vpColVector_h_
 
 #include <visp3/core/vpArray2D.h>
 #include <visp3/core/vpMath.h>
@@ -138,7 +138,7 @@ public:
     (*this) *= d2r;
   }
 
-  double euclideanNorm() const;
+  vp_deprecated double euclideanNorm() const;
   /*!
      Extract a sub-column vector from a column vector.
      \param r : Index of the row corresponding to the first element of the
@@ -167,6 +167,7 @@ public:
     return vpColVector(*this, r, colsize);
   }
 
+  double frobeniusNorm() const;
   vpColVector hadamard(const vpColVector &v) const;
 
   double infinityNorm() const;
@@ -254,11 +255,12 @@ public:
     */
   void resize(const unsigned int nrows, const unsigned int ncols, const bool flagNullify)
   {
-    if (ncols != 1)
+    if (ncols != 1) {
       throw(vpException(vpException::fatalError,
                         "Cannot resize a column vector to a (%dx%d) "
                         "dimension vector that has more than one column",
                         nrows, ncols));
+    }
     vpArray2D<double>::resize(nrows, ncols, flagNullify);
   }
 

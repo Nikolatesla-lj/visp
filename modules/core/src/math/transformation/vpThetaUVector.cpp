@@ -1,7 +1,7 @@
 /****************************************************************************
  *
- * This file is part of the ViSP software.
- * Copyright (C) 2005 - 2017 by Inria. All rights reserved.
+ * ViSP, open source Visual Servoing Platform software.
+ * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -87,7 +87,7 @@ vpThetaUVector::vpThetaUVector(const vpRxyzVector &rxyz) : vpRotationVector(3) {
 /*!
   Initialize a \f$\theta {\bf u}\f$ vector from a quaternion representation vector.
 */
-vpThetaUVector::vpThetaUVector(const vpQuaternionVector &q) : vpRotationVector(4) { buildFrom(q); }
+vpThetaUVector::vpThetaUVector(const vpQuaternionVector &q) : vpRotationVector(3) { buildFrom(q); }
 
 /*!
   Build a \f$\theta {\bf u}\f$ vector from 3 angles in radian.

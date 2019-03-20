@@ -30,13 +30,14 @@
 int main(int argc, char **argv)
 {
 #if defined(VISP_HAVE_OPENCV) &&                                 \
-    (defined(VISP_HAVE_V4L2) || defined(VISP_HAVE_DC1394) || defined(VISP_HAVE_CMU1394) || (VISP_HAVE_OPENCV_VERSION >= 0x020100) || defined(VISP_HAVE_FLYCAPTURE) || defined(VISP_HAVE_REALSENSE2) )
+    (defined(VISP_HAVE_V4L2) || defined(VISP_HAVE_DC1394) || defined(VISP_HAVE_CMU1394) || (VISP_HAVE_OPENCV_VERSION >= 0x020100) || \
+    defined(VISP_HAVE_FLYCAPTURE) || defined(VISP_HAVE_REALSENSE2) )
 
   try {
-    std::string opt_modelname = "teabox";
+    std::string opt_modelname = "model/teabox/teabox.cao";
     int opt_tracker = 2;
     int opt_device = 0;             // For OpenCV and V4l2 grabber to set the camera device
-    double opt_proj_error_threshold = 20.;
+    double opt_proj_error_threshold = 30.;
     bool opt_use_ogre = false;
     bool opt_use_scanline = false;
     bool opt_display_projection_error = false;
@@ -79,11 +80,11 @@ int main(int argc, char **argv)
         std::cout << "\nUsage: " << argv[0]
                   << " [--camera_device <camera device> (default: 0)]"
                   << " [--intrinsic <intrinsic file> (default: empty)]"
-                  << " [--camera_name <camera name>]  (default: empty)"
+                  << " [--camera_name <camera name>  (default: empty)]"
                   << " [--model <model name> (default: teabox)]"
                   << " [--tracker <0=egde|1=keypoint|2=hybrid> (default: 2)]"
                   << " [--use_ogre] [--use_scanline]"
-                  << " [--max_proj_error <allowed projection error> (default: 20)]"
+                  << " [--max_proj_error <allowed projection error> (default: 30)]"
                   << " [--learn] [--auto_init] [--learning_data <data-learned.bin> (default: learning/data-learned.bin)]"
                   << " [--display_proj_error]"
                   << " [--help] [-h]\n"
@@ -109,8 +110,8 @@ int main(int argc, char **argv)
     std::cout << "  Proj. error : " << opt_proj_error_threshold << std::endl;
     std::cout << "  Display proj. error: " << opt_display_projection_error << std::endl;
     std::cout << "Config files: " << std::endl;
-    std::cout << "  Config file: " << "\"" << objectname + ".xml" << "\"" << std::endl;
-    std::cout << "  Model file : " << "\"" << objectname + ".cao" << "\"" << std::endl;
+    std::cout << "  Config file : " << "\"" << objectname + ".xml" << "\"" << std::endl;
+    std::cout << "  Model file  : " << "\"" << objectname + ".cao" << "\"" << std::endl;
     std::cout << "  Init file   : " << "\"" << objectname + ".init"  << "\"" << std::endl;
     std::cout << "Learning options   : " << std::endl;
     std::cout << "  Learn       : " << opt_learn << std::endl;
@@ -118,7 +119,11 @@ int main(int argc, char **argv)
     std::cout << "  Learning data: " << opt_learning_data << std::endl;
 
     //! [Image]
-    vpImage<unsigned char> I;
+#if VISP_VERSION_INT > VP_VERSION_INT(3, 2, 0)
+    vpImage<vpRGBa> I;         // Since ViSP 3.2.0 we support model-based tracking on color images
+#else
+    vpImage<unsigned char> I;  // Tracking on gray level images
+#endif
     //! [Image]
 
     //! [Set camera parameters]
@@ -215,7 +220,6 @@ int main(int argc, char **argv)
 
     //! [Constructor]
     vpMbGenericTracker tracker;
-    tracker.setProjectionErrorComputation(true); // To detect tracking failure
     if (opt_tracker == 0)
       tracker.setTrackerType(vpMbGenericTracker::EDGE_TRACKER);
 #if defined(VISP_HAVE_MODULE_KLT) && defined(VISP_HAVE_OPENCV)
@@ -301,7 +305,6 @@ int main(int argc, char **argv)
     tracker.setProjectionErrorDisplay(opt_display_projection_error);
     //! [Set projection error computation]
 
-
 #if (defined(VISP_HAVE_OPENCV_NONFREE) || defined(VISP_HAVE_OPENCV_XFEATURES2D))
     std::string detectorName = "SIFT";
     std::string extractorName = "SIFT";
@@ -347,11 +350,12 @@ int main(int argc, char **argv)
 
     //To be able to display keypoints matching with test-detection-rs2
     int learn_id = 1;
+    unsigned int learn_cpt = 0;
     bool quit = false;
+    bool tracking_failed = false;
 
     while (!quit) {
       double t_begin = vpTime::measureTimeMs();
-      bool tracking_failed = false;
 #if defined(VISP_HAVE_V4L2) || defined(VISP_HAVE_DC1394) || defined(VISP_HAVE_CMU1394) || defined(VISP_HAVE_FLYCAPTURE) || defined(VISP_HAVE_REALSENSE2)
       g.acquire(I);
 #elif defined(VISP_HAVE_OPENCV)
@@ -362,6 +366,7 @@ int main(int argc, char **argv)
 
       // Run auto initialization from learned data
       if (run_auto_init) {
+        tracking_failed = false;
         if (keypoint.matchPoint(I, cam, cMo)) {
           std::cout << "Auto init succeed" << std::endl;
           tracker.initFromPose(I, cMo);
@@ -369,6 +374,11 @@ int main(int argc, char **argv)
           vpDisplay::flush(I);
           continue;
         }
+      }
+      else if (tracking_failed) {
+        // Manual init
+        tracking_failed = false;
+        tracker.initClick(I, objectname + ".init", true);
       }
 
       // Run the tracker
@@ -390,8 +400,16 @@ int main(int argc, char **argv)
       }
 
       if (! tracking_failed) {
-        // Check tracking errors
-        double proj_error = tracker.getProjectionError();
+        double proj_error = 0;
+        if (tracker.getTrackerType() & vpMbGenericTracker::EDGE_TRACKER) {
+          // Check tracking errors
+          proj_error = tracker.getProjectionError();
+        }
+        else {
+          tracker.getPose(cMo);
+          tracker.getCameraParameters(cam);
+          proj_error = tracker.computeCurrentProjectionError(I, cMo, cam);
+        }
         if (proj_error > opt_proj_error_threshold) {
           std::cout << "Tracker needs to restart (projection error detected: " << proj_error << ")" << std::endl;
           if (opt_auto_init) {
@@ -424,6 +442,7 @@ int main(int argc, char **argv)
       }
 
       if (learn_position) {
+        learn_cpt ++;
         // Detect keypoints on the current image
         std::vector<cv::KeyPoint> trainKeyPoints;
         keypoint.detect(I, trainKeyPoints);
@@ -473,8 +492,8 @@ int main(int argc, char **argv)
 
       vpDisplay::flush(I);
     }
-    if (opt_learn) {
-      std::cout << "Save learning file: " << opt_learning_data << std::endl;
+    if (opt_learn && learn_cpt) {
+      std::cout << "Save learning from " << learn_cpt << " images in file: " << opt_learning_data << std::endl;
       keypoint.saveLearningData(opt_learning_data, true, true);
     }
 

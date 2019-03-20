@@ -1,7 +1,7 @@
 #############################################################################
 #
-# This file is part of the ViSP software.
-# Copyright (C) 2005 - 2017 by Inria. All rights reserved.
+# ViSP, open source Visual Servoing Platform software.
+# Copyright (C) 2005 - 2019 by Inria. All rights reserved.
 #
 # This software is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -139,6 +139,18 @@ endif()
 
 if(DEFINED WINRT_8_1)
   add_extra_compiler_option(/ZW) # do not use with 8.0
+endif()
+
+if(USE_MKL)
+  if (NOT DEFINED ENV{CRAY_PRGENVPGI} AND
+      NOT DEFINED ENV{CRAY_PRGENVGNU} AND
+      NOT DEFINED ENV{CRAY_PRGENVCRAY} AND
+      NOT DEFINED ENV{CRAY_PRGENVINTEL})
+    set(ABI "-m64")
+  endif()
+
+  add_extra_compiler_option(-DMKL_ILP64)
+  add_extra_compiler_option("${ABI}")
 endif()
 
 # Add user supplied extra options (optimization, etc...)
